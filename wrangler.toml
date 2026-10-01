@@ -1,6 +1,8 @@
 name = "deathandtaxes"
 main = "src/worker.js"
 compatibility_date = "2026-09-01"
+workers_dev = true
+preview_urls = false
 
 # The website itself. Only /api/* requests run the Worker; everything else is served straight from ./public.
 [assets]
@@ -9,25 +11,24 @@ binding = "ASSETS"
 run_worker_first = ["/api/*"]
 
 # Backup copy of every contact form request.
-# Create it once with `npx wrangler d1 create deathandtaxes` and paste the id it prints below.
 [[d1_databases]]
 binding = "DB"
 database_name = "deathandtaxes"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "b16e7064-e9ac-48e5-bac0-f88009749a59"
 migrations_dir = "migrations"
 
 # Emails new requests to the firm (Cloudflare Email Service). Locked to one recipient, which must be a
 # verified destination address in this Cloudflare account. That's what keeps sending free on every plan.
 [[send_email]]
 name = "EMAIL"
-destination_address = "Maura@dataccounting.co"
+destination_address = "maura@shadeworldinc.com"
 
 [vars]
-NOTIFY_EMAIL = "Maura@dataccounting.co"
+NOTIFY_EMAIL = "maura@shadeworldinc.com"
 MAIL_FROM = "website@dataccounting.co"
 MAIL_FROM_NAME = "DATAccounting Website"
 # Public Turnstile site key (spam check). Leave empty to turn the spam check off.
-TURNSTILE_SITE_KEY = ""
+TURNSTILE_SITE_KEY = "0x4AAAAAAFLXG6JbIagWjXzG"
 
 # The Turnstile secret is never stored in this file. Set it with:
 #   npx wrangler secret put TURNSTILE_SECRET_KEY
