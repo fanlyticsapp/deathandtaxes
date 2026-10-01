@@ -89,13 +89,7 @@ export async function handleContact(request, env, ctx) {
     console.error('Failed to save submission', err);
   }
 
-  let emailStatus;
-  try {
-    emailStatus = await sendNotification(data, env, { idempotencyKey: id !== null ? `submission-${id}` : undefined });
-  } catch (err) {
-    console.error('Failed to send notification email', err);
-    emailStatus = 'failed';
-  }
+  const emailStatus = await sendNotification(data, env);
 
   if (id !== null) {
     ctx.waitUntil(

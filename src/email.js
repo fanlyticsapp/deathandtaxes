@@ -1,4 +1,5 @@
-// Builds and sends the "new request" email to the firm through Resend (https://resend.com, free tier).
+// Builds and sends the "new request" email to the firm with Cloudflare Email Service (the EMAIL send_email binding).
+// Sending to a verified destination address in the same Cloudflare account is free on every plan.
 
 const TIME_ZONE = 'America/New_York';
 
@@ -86,38 +87,28 @@ export function buildEmail(data, date = new Date()) {
 }
 
 /**
- * Returns 'sent', 'failed', or 'skipped' (no API key configured, e.g. local development).
+ * Returns 'sent', 'failed', or 'skipped' (no EMAIL binding configured).
  */
-export async function sendNotification(data, env, { idempotencyKey } = {}) {
+export async function sendNotification(data, env) {
   const { subject, text, html } = buildEmail(data);
 
-  if (!env.RESEND_API_KEY) {
-    console.log(`[email skipped: RESEND_API_KEY is not set]\nTo: ${env.NOTIFY_EMAIL}\nSubject: ${subject}\n\n${text}`);
+  if (!env.EMAIL) {
+    console.log(`[email skipped: no EMAIL binding]\nTo: ${env.NOTIFY_EMAIL}\nSubject: ${subject}\n\n${text}`);
     return 'skipped';
   }
 
-  const headers = {
-    Authorization: `Bearer ${env.RESEND_API_KEY}`,
-    'Content-Type': 'application/json',
-  };
-  if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey;
-
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      from: env.MAIL_FROM,
-      to: [env.NOTIFY_EMAIL],
-      reply_to: data.email,
+  try {
+    await env.EMAIL.send({
+      to: env.NOTIFY_EMAIL,
+      from: { name: env.MAIL_FROM_NAME, email: env.MAIL_FROM },
+      replyTo: { name: data.name, email: data.email },
       subject,
       text,
       html,
-    }),
-  });
-
-  if (!res.ok) {
-    console.error(`Resend rejected the email (${res.status}): ${await res.text()}`);
+    });
+    return 'sent';
+  } catch (err) {
+    console.error(`Cloudflare Email Service rejected the email (${err.code || 'unknown'}): ${err.message}`);
     return 'failed';
   }
-  return 'sent';
 }

@@ -26,7 +26,7 @@ test('plain-text email lists every field and the Eastern time it arrived', () =>
   assert.match(text, /Received: Sep 30, 2026, 3:14\sPM ET/);
 });
 
-test('skips sending when no Resend API key is configured', async () => {
+test('skips sending when no EMAIL binding is configured', async () => {
   const originalLog = console.log;
   console.log = () => {};
   try {
@@ -36,38 +36,38 @@ test('skips sending when no Resend API key is configured', async () => {
   }
 });
 
-test('sends through Resend with reply-to set to the visitor', async () => {
-  const originalFetch = globalThis.fetch;
-  let request;
-  globalThis.fetch = async (url, init) => {
-    request = { url, init };
-    return new Response('{"id":"abc"}', { status: 200 });
+test('sends through the Cloudflare EMAIL binding with reply-to set to the visitor', async () => {
+  let message;
+  const env = {
+    NOTIFY_EMAIL: 'owner@example.com',
+    MAIL_FROM: 'website@example.com',
+    MAIL_FROM_NAME: 'Example Website',
+    EMAIL: { send: async (msg) => { message = msg; return { messageId: 'abc' }; } },
   };
-  try {
-    const env = { RESEND_API_KEY: 're_test', NOTIFY_EMAIL: 'owner@example.com', MAIL_FROM: 'Site <site@example.com>' };
-    assert.equal(await sendNotification(data, env, { idempotencyKey: 'submission-7' }), 'sent');
-    assert.equal(request.url, 'https://api.resend.com/emails');
-    assert.equal(request.init.headers.Authorization, 'Bearer re_test');
-    assert.equal(request.init.headers['Idempotency-Key'], 'submission-7');
-    const body = JSON.parse(request.init.body);
-    assert.deepEqual(body.to, ['owner@example.com']);
-    assert.equal(body.reply_to, 'jane@example.com');
-    assert.equal(body.from, 'Site <site@example.com>');
-  } finally {
-    globalThis.fetch = originalFetch;
-  }
+  assert.equal(await sendNotification(data, env), 'sent');
+  assert.equal(message.to, 'owner@example.com');
+  assert.deepEqual(message.from, { name: 'Example Website', email: 'website@example.com' });
+  assert.deepEqual(message.replyTo, { name: 'Jane <b>Creator</b>', email: 'jane@example.com' });
+  assert.equal(message.subject, 'New consultation request from Jane <b>Creator</b>');
+  assert.match(message.text, /Message:\nHi!/);
+  assert.match(message.html, /&lt;script&gt;/);
 });
 
-test('reports failure when Resend rejects the email', async () => {
-  const originalFetch = globalThis.fetch;
+test('reports failure when Cloudflare rejects the email', async () => {
   const originalError = console.error;
-  globalThis.fetch = async () => new Response('{"message":"invalid from"}', { status: 422 });
   console.error = () => {};
+  const env = {
+    NOTIFY_EMAIL: 'owner@example.com',
+    MAIL_FROM: 'website@example.com',
+    EMAIL: {
+      send: async () => {
+        throw Object.assign(new Error('sender domain is not verified'), { code: 'E_SENDER_NOT_VERIFIED' });
+      },
+    },
+  };
   try {
-    const env = { RESEND_API_KEY: 're_test', NOTIFY_EMAIL: 'owner@example.com', MAIL_FROM: 'bad' };
     assert.equal(await sendNotification(data, env), 'failed');
   } finally {
-    globalThis.fetch = originalFetch;
     console.error = originalError;
   }
 });
