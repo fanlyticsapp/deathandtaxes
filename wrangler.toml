@@ -4,11 +4,18 @@ compatibility_date = "2026-09-01"
 workers_dev = true
 preview_urls = false
 
-# The website itself. Only /api/* requests run the Worker; everything else is served straight from ./public.
+# Live on her domain. Cloudflare creates the DNS records and certificates for these automatically.
+routes = [
+  { pattern = "www.dataccounting.co", custom_domain = true },
+  { pattern = "dataccounting.co", custom_domain = true },
+]
+
+# The website itself, served from ./public. The Worker runs first on every request so it can redirect
+# dataccounting.co to www.dataccounting.co and handle /api/*; everything else is passed straight to the files.
 [assets]
 directory = "./public"
 binding = "ASSETS"
-run_worker_first = ["/api/*"]
+run_worker_first = true
 
 # Backup copy of every contact form request.
 [[d1_databases]]

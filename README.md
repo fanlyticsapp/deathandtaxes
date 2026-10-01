@@ -46,7 +46,9 @@ npm run deploy                                   # live at https://deathandtaxes
 
 For automatic deploys on every push to GitHub, connect the repo under Workers & Pages in the Cloudflare dashboard.
 
-**Domain:** when she's ready to leave Wix, add `dataccounting.co` as a custom domain on the Worker. The old Wix URLs (`/request-service`, `/privacy-policy`, `/accessibility-statement`) keep working, and `/about-4` redirects to `/content-creators`.
+**Domain:** the site is live at https://www.dataccounting.co, the same address the Wix site used. Both custom domains are set in `wrangler.toml`. The bare `dataccounting.co` and plain `http://` redirect to it. The old Wix URLs (`/request-service`, `/privacy-policy`, `/accessibility-statement`) still work, and `/about-4` redirects to `/content-creators`.
+
+**Email for the domain:** Cloudflare Email Routing forwards `maura@dataccounting.co` to `maura@shadeworldinc.com`. The domain's SPF record is `v=spf1 include:_spf.mx.cloudflare.net include:_spf.google.com ~all`, which covers both the forwarding and her sending as @dataccounting.co through Google.
 
 ## Viewing saved requests
 
